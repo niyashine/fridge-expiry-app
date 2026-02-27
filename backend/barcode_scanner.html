@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fridge Barcode Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+        #scanner {
+            width: 400px;
+            height: 300px;
+            margin: auto;
+            border: 2px solid #333;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 20px;
+        }
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>Scan Your Food Barcode</h2>
+    <div id="scanner"></div>
+    <div id="status">Waiting for barcode...</div>
+
+    <script>
+        // Initialize QuaggaJS
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner'),
+                constraints: {
+                    width: 400,
+                    height: 300,
+                    facingMode: "environment"
+                },
+            },
+            decoder: {
+                readers: ["upc_reader", "upc_e_reader", "ean_reader", "ean_8_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error(err);
+                document.getElementById("status").textContent = "Error initializing camera";
+                return;
+            }
+            console.log("Quagga initialized");
+            document.getElementById("status").textContent = "Camera ready. Show a barcode.";
+            Quagga.start();
+        });
+
+        // When a barcode is detected
+        Quagga.onDetected(function(data) {
+            const code = data.codeResult.code;
+            console.log("Detected barcode:", code);
+            document.getElementById("status").textContent = "Scanned: " + code;
+
+            // Stop scanner after first scan
+            Quagga.stop();
+
+            // Send barcode to backend
+            fetch("http://localhost:5000/foods/scan", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ barcode: code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("Product Added: " + (data.name || "Unknown"));
+                console.log("Backend response:", data);
+            })
+            .catch(err => {
+                console.error("Error sending barcode:", err);
+                alert("Failed to send barcode to server");
+            });
+        });
+    </script>
+</body>
+</html>

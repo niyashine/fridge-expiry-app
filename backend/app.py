@@ -1,15 +1,31 @@
 from flask import Flask
 from flask_cors import CORS
-from routes.food import food
+import mysql.connector
 
+# --------------------
+# Flask setup
+# --------------------
 app = Flask(__name__)
 CORS(app)
 
-app.register_blueprint(food)
+# --------------------
+# MySQL setup
+# --------------------
+db = mysql.connector.connect(
+    host="localhost",       # your MySQL host
+    user="root",            # your MySQL username
+    password="niya99",
+    database="fridge_db"    # your MySQL database
+)
 
-@app.route("/")
-def home():
-    return "Fridge API Running"
+# --------------------
+# Register blueprint
+# --------------------
+from routes.food import food_bp
+app.register_blueprint(food_bp)
 
+# --------------------
+# Run server
+# --------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
